@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIX Media Orchestrator — PoC 화면 목록</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body { min-width: 0; background: var(--bg-soft); }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 56px 32px 80px; }
+  .head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .list { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .item {
+    display: flex; align-items: center; gap: 16px;
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 16px 20px; transition: box-shadow .15s, transform .15s;
+  }
+  .item:hover { box-shadow: var(--shadow-2); transform: translateY(-1px); }
+  .no {
+    width: 38px; height: 38px; border-radius: 11px; flex: none;
+    background: var(--blue-soft); color: var(--blue-deep);
+    display: grid; place-items: center; font-size: 14px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .item .t { font-size: 15.5px; font-weight: 800; letter-spacing: -0.015em; }
+  .item .d { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+  .grp { margin-top: 26px; font-size: 12.5px; font-weight: 800; color: var(--gray-400); letter-spacing: .04em; }
+  .note {
+    margin-top: 32px; font-size: 13px; color: var(--gray-500); line-height: 1.7;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <span class="logo-mark" style="width:42px;height:42px;border-radius:13px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 4.5 5.5 19.5M12 4.5l6.5 15M7.8 14.5h8.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <div>
+      <h1 class="page-title">AIX Media Orchestrator — PoC 화면 목록</h1>
+      <p class="page-sub">뉴스·광고 AI 제작 SaaS MVP · 캡처 + 체험 데모 14장 (광고주 셀프 제작 시나리오)</p>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="grp">메인</div>
+    <a class="item" href="01-home.html"><span class="no">01</span><div><div class="t">메인 화면</div><div class="d">기사 생성 · 영상 광고 · SNS 이미지 광고 진입 + 온톨로지 위젯 + 산업 템플릿 6종 + 최근 프로젝트</div></div></a>
+
+    <div class="grp">기사 생성 (2장)</div>
+    <a class="item" href="02-article-create.html"><span class="no">02</span><div><div class="t">기사 생성 — 프롬프트 및 이미지 생성</div><div class="d">주제 프롬프트 · 유형/분량/톤 · 온톨로지 ON/OFF · 기사 초안 + 보도 이미지 4장</div></div></a>
+    <a class="item" href="03-article-edit.html"><span class="no">03</span><div><div class="t">기사 편집 레이아웃</div><div class="d">미디어 배치 프리셋 6종 · 이미지 비율 선택 · 본문 단/폭/여백 · 요소 속성 패널</div></div></a>
+
+    <div class="grp">영상 광고 (3장)</div>
+    <a class="item" href="04-video-create.html"><span class="no">04</span><div><div class="t">영상 클립 생성</div><div class="d">길이(15초 기본) · 비율 선택(프리뷰 연동) · 온톨로지 개인화 ON/OFF · 스토리보드 · 생성 큐</div></div></a>
+    <a class="item" href="05-video-edit.html"><span class="no">05</span><div><div class="t">영상 클립 편집</div><div class="d">자체 AI 편집 ↔ Premiere 플러그인 선택 · 타임라인(클립 이어붙이기) · AI 명령 편집 · BGM 생성</div></div></a>
+    <a class="item" href="06-collab.html"><span class="no">06</span><div><div class="t">협업 대시보드</div><div class="d">링크 공유/ID 초대 · 코멘트(타임코드) · To Do List · 활동 로그</div></div></a>
+    <a class="item" href="12-premiere-plugin.html"><span class="no">12</span><div><div class="t">Premiere Pro 플러그인 (UXP 패널)</div><div class="d">실제 Premiere 안 도킹 화면 재현 — 클립 전송 · v3 업데이트 수신 · 코멘트 미러 · 타임라인 드래그</div></div></a>
+
+    <div class="grp">이미지 광고 (2장)</div>
+    <a class="item" href="07-image-create.html"><span class="no">07</span><div><div class="t">이미지 광고 생성</div><div class="d">산업 템플릿 6종 · 비율 선택 · 광고 문구 자동 생성 · 4가지 시안</div></div></a>
+    <a class="item" href="08-image-edit.html"><span class="no">08</span><div><div class="t">이미지 편집</div><div class="d">AI 브러시(부분 재생성) · 레이어 · 텍스트/CTA 속성 · AI 보정(업스케일 등)</div></div></a>
+
+    <div class="grp">마이페이지 + 구성도</div>
+    <a class="item" href="09-mypage.html"><span class="no">09</span><div><div class="t">마이페이지 — 프로젝트 관리</div><div class="d">사용량 · SaaS API 키 · 타입별 탭 · 프로젝트 그리드(상태/공유)</div></div></a>
+    <a class="item" href="10-architecture.html"><span class="no">10</span><div><div class="t">시스템 구성도 (MVP PoC)</div><div class="d">인포그래픽 도식 — 5계층 아키텍처 · 자체/오픈소스/상용 API 범례 (System Architecture)</div></div></a>
+    <a class="item" href="11-assets.html"><span class="no">11</span><div><div class="t">공유 자산 라이브러리</div><div class="d">프로젝트 폴더 · 자산별 공유 여부(팀/링크/비공개) · AI 생성 출처 · 상세 패널</div></div></a>
+
+    <div class="grp">온톨로지</div>
+    <a class="item" href="13-ontology.html"><span class="no">13</span><div><div class="t">온톨로지 스튜디오</div><div class="d">브랜드 지식그래프 탐색(노드 클릭) · 데이터 소스 · 적용 전/후 비교 · 저작 화면 주입 포인트</div></div></a>
+    <a class="item" href="14-ontology-proposal.html"><span class="no">14</span><div><div class="t">온톨로지 활용성 제안서 (문서)</div><div class="d">B2B 문서 양식 — 문제 정의 · 전용 구조도(Data Architecture) · 시나리오 4종 · 시너지 표 · 로드맵 · KPI</div></div></a>
+  </div>
+
+  <div class="note">
+    <b style="color:var(--gray-700)">캡처 가이드</b><br>
+    브라우저 창 너비 1440px 이상 + 100% 배율 권장. 각 화면의 토글·세그먼트·칩은 클릭해서 상태를 바꾼 뒤 캡처할 수 있습니다 (예: 04 비율 변경 시 프리뷰 형태 연동, 온톨로지 ON/OFF 시 패널 dim). 생성·적용·내보내기 버튼은 진행 시뮬레이션과 토스트 알림으로 반응합니다 (데모 모드). 05·08 캔버스의 코멘트 핀을 클릭하면 스레드가 열립니다. 저작 체험: 05 타임라인 드래그·클립 삭제·자막 저작(폰트/크기/색/위치)·재생, 08 텍스트 레이어 추가·크롭·배경 제거·변형 제안·레이어 드래그, 03 레이아웃 프리셋·본문 편집, 13 그래프 탐색. 휠 줌/팬은 모든 캔버스에서 동작합니다 (03은 Cmd+휠). 10 시스템 구성도는 단독 문서형 레이아웃이라 그대로 도식 그림으로 사용 가능합니다.
+  </div>
+</div>
+</body>
+</html>
