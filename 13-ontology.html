@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIX — 온톨로지 스튜디오</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .onto { display: grid; grid-template-columns: 268px minmax(0, 1fr) 308px; flex: 1; min-height: 0; }
+  .opanel { border-right: 1px solid var(--line); padding: 20px 18px; overflow-y: auto; max-height: calc(100vh - 64px); display: flex; flex-direction: column; gap: 20px; }
+  .opanel-r { border-right: 0; border-left: 1px solid var(--line); }
+  .op-title { font-size: 14px; font-weight: 800; letter-spacing: -0.02em; }
+
+  .src { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 11px; }
+  .src + .src { margin-top: 8px; }
+  .src .si { width: 34px; height: 34px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--bg-fill); font-size: 11px; font-weight: 800; color: var(--gray-500); }
+  .src .sn { flex: 1; min-width: 0; }
+  .src .sn b { font-size: 13px; font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .src .sn span { font-size: 11px; color: var(--gray-400); font-weight: 600; }
+
+  .seg-li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--gray-600); }
+  .seg-li:hover { background: var(--bg-soft); }
+  .seg-li.active { background: var(--blue-soft); color: var(--blue-deep); font-weight: 700; }
+  .seg-li .pct { margin-left: auto; font-size: 11.5px; color: var(--gray-400); font-weight: 700; }
+
+  .gstage { display: flex; flex-direction: column; min-width: 0; max-height: calc(100vh - 64px); overflow-y: auto; }
+  .gcanvas { position: relative; background: var(--bg-soft); border-bottom: 1px solid var(--line); }
+  .gcanvas svg { display: block; width: 100%; height: auto; }
+  .gnode { cursor: pointer; }
+  .gnode circle { transition: all .15s; }
+  .gnode:hover circle { stroke-width: 2.5; }
+  .gnode.sel > circle { stroke: var(--ink) !important; stroke-width: 2.5 !important; }
+  .gstat {
+    position: absolute; top: 14px; left: 16px; display: flex; gap: 14px;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(4px);
+    border: 1px solid var(--line); border-radius: 11px; padding: 9px 14px;
+    font-size: 12.5px; color: var(--gray-600); font-weight: 600;
+  }
+  .gstat b { color: var(--ink); font-weight: 800; }
+  .glegend { position: absolute; right: 16px; top: 14px; display: flex; gap: 7px; }
+  .gl { font-size: 11px; font-weight: 700; border-radius: 99px; padding: 4px 10px; background: #fff; border: 1px solid var(--line); color: var(--gray-500); display: inline-flex; align-items: center; gap: 5px; }
+  .gl i { width: 8px; height: 8px; border-radius: 50%; }
+
+  .ab { padding: 20px 24px 36px; }
+  .ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  .ab-card { border: 1.5px solid var(--line); border-radius: var(--radius-m); padding: 16px 18px; }
+  .ab-card.on { border-color: #bcd9fb; background: var(--blue-tint); }
+  .ab-card .ab-tag { margin-bottom: 9px; }
+  .ab-card p { font-size: 14.5px; line-height: 1.65; color: var(--gray-700); }
+  .ab-card.on p { color: var(--ink); font-weight: 600; }
+  .ab-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+  .ab-chips span { font-size: 11px; font-weight: 700; background: var(--blue-soft); color: var(--blue-deep); border-radius: 6px; padding: 3px 8px; }
+
+  .meta-list { display: flex; flex-direction: column; }
+  .meta-list .row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--bg-fill); font-size: 12.5px; }
+  .meta-list .row:last-child { border-bottom: 0; }
+  .meta-list .k { color: var(--gray-400); font-weight: 600; flex: none; }
+  .meta-list .v { color: var(--gray-700); font-weight: 700; text-align: right; }
+  .inj { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: 12.5px; font-weight: 600; }
+  .inj + .inj { margin-top: 6px; }
+  .inj .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: none; }
+  .inj .scr { margin-left: auto; font-size: 11px; color: var(--gray-400); }
+  .rel-chip { font-size: 11.5px; font-weight: 700; background: var(--bg-fill); color: var(--gray-600); border-radius: 7px; padding: 4px 9px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <a class="logo" href="01-home.html">
+      <span class="logo-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 4.5 5.5 19.5M12 4.5l6.5 15M7.8 14.5h8.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span><span class="logo-name">AI<em>X</em></span>
+      <div class="logo-sub">Media Orchestrator</div></span>
+    </a>
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-label">만들기</div>
+        <a class="nav-item" href="01-home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5 12 4.5l8.5 7"/><path d="M6 10.5V19h12v-8.5"/></svg>홈</a>
+        <a class="nav-item" href="02-article-create.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M8 8.5h8M8 12.5h8M8 16.5h5"/></svg>기사 생성</a>
+        <a class="nav-item" href="04-video-create.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 9.3l4.8 2.7-4.8 2.7z"/></svg>영상 광고</a>
+        <a class="nav-item" href="07-image-create.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="8.7" cy="9.6" r="1.7"/><path d="M5 17.5l4.8-4.8 3.6 3.6 2.7-2.7 3.4 3.4"/></svg>이미지 광고</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">워크스페이스</div>
+        <a class="nav-item" href="06-collab.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.7" r="3.1"/><path d="M3.8 19.2c.6-3.1 2.7-4.7 5.2-4.7s4.6 1.6 5.2 4.7"/><circle cx="17.2" cy="9.8" r="2.4"/><path d="M16.2 14.9c2.3.3 3.7 1.7 4.1 4"/></svg>협업 보드</a>
+        <a class="nav-item" href="11-assets.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.8"/></svg>자산 라이브러리</a>
+        <a class="nav-item active" href="13-ontology.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.2" cy="6.4" r="2.5"/><circle cx="17.8" cy="8.2" r="2.5"/><circle cx="12" cy="17.8" r="2.5"/><path d="M8.6 7 15.4 8M7.2 8.6l3.6 6.9M16.6 10.4l-3.4 5.3"/></svg>온톨로지</a>
+        <a class="nav-item" href="09-mypage.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7c0-1.1.9-2 2-2h4.2l1.9 2.3h7c1.1 0 2 .9 2 2V17c0 1.1-.9 2-2 2h-13c-1.1 0-2-.9-2-2z"/></svg>내 프로젝트</a>
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <span class="avatar av-1">이</span>
+      <span><div class="name">이무성</div><div class="plan">Pro 트라이얼</div></span>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">온톨로지 <span class="sep">/</span> <b>진원 홍삼 — 브랜드 그래프</b></div>
+      <span class="badge badge-green">학습 최신 · 어제 18:40</span>
+      <div class="topbar-right">
+        <span class="small muted">개인화 적용</span>
+        <span class="badge badge-blue" id="ontoMaster">ON</span>
+        <span class="toggle on" data-status-label="#ontoMaster" role="switch" aria-label="개인화 적용"></span>
+        <button class="btn btn-soft btn-sm" data-fake-gen data-steps="소스 변경분 수집|엔티티·관계 추출|그래프 반영">그래프 재학습</button>
+        <a class="btn btn-ghost btn-sm" href="14-ontology-proposal.html">활용 제안서</a>
+        <span class="avatar av-1">이</span>
+      </div>
+    </header>
+
+    <div class="onto">
+      <!-- 좌: 데이터 소스 -->
+      <aside class="opanel">
+        <div>
+          <div class="op-title" style="margin-bottom:10px">데이터 소스</div>
+          <div class="src"><span class="si">PDF</span><span class="sn"><b>브랜드 가이드 v3.pdf</b><span>학습 완료 · 노드 142개 추출</span></span><span class="badge badge-green">완료</span></div>
+          <div class="src"><span class="si">AD</span><span class="sn"><b>과거 캠페인 소재 24건</b><span>학습 완료 · 톤·비주얼 패턴</span></span><span class="badge badge-green">완료</span></div>
+          <div class="src"><span class="si">KPI</span><span class="sn"><b>광고 성과 리포트</b><span>주간 자동 수집 · 반응 키워드</span></span><span class="badge badge-blue"><span class="b-dot"></span>수집 중</span></div>
+          <div class="src"><span class="si">SNS</span><span class="sn"><b>자사몰 · SNS 채널</b><span>연결됨 · 댓글/리뷰 반영</span></span><span class="badge badge-green">연결</span></div>
+          <button class="btn btn-ghost btn-sm btn-block" style="margin-top:10px" id="srcAddBtn">+ 소스 추가</button>
+        </div>
+        <hr class="divider" style="margin:0">
+        <div>
+          <div class="op-title" style="margin-bottom:8px">고객 세그먼트</div>
+          <div class="seg-li active">4060 액티브 시니어 <span class="pct">주 타깃 · 62%</span></div>
+          <div class="seg-li">3040 선물 구매자 <span class="pct">27%</span></div>
+          <div class="seg-li">재구매 고객 <span class="pct">11%</span></div>
+        </div>
+        <div class="xsmall muted" style="margin-top:auto;line-height:1.6">온톨로지는 광고주 데이터로만 구축되며 워크스페이스 밖으로 공유되지 않습니다.</div>
+      </aside>
+
+      <!-- 중앙: 그래프 + 적용 전/후 -->
+      <section class="gstage">
+        <div class="gcanvas">
+          <div class="gstat"><span>노드 <b>1,284</b></span><span>관계 <b>3,902</b></span><span>신뢰도 평균 <b>0.87</b></span></div>
+          <div class="glegend">
+            <span class="gl"><i style="background:#3182f6"></i>브랜드·제품</span>
+            <span class="gl"><i style="background:#00bf6f"></i>고객</span>
+            <span class="gl"><i style="background:#ff9500"></i>톤·스타일</span>
+            <span class="gl"><i style="background:#6e7ff3"></i>채널·성과</span>
+          </div>
+          <svg viewBox="0 0 900 410" fill="none">
+            <g stroke="#c9d8ec" stroke-width="1.3">
+              <path d="M450 205 L300 120 M450 205 L290 280 M450 205 L600 110 M450 205 L625 285 M300 120 L195 80 M300 120 L210 165 M290 280 L185 255 M290 280 L215 330 M600 110 L700 60 M600 110 L715 130 M625 285 L730 250 M625 285 L715 340 M600 110 L625 285 M300 120 L290 280"/>
+            </g>
+            <g class="gnode sel" data-node="brand">
+              <circle cx="450" cy="205" r="34" fill="#3182f6" stroke="#1b64da" stroke-width="1.5"/>
+              <text x="450" y="210" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">진원</text>
+            </g>
+            <g class="gnode" data-node="product"><circle cx="300" cy="120" r="24" fill="#e8f3ff" stroke="#3182f6" stroke-width="1.5"/><text x="300" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#1b64da">홍삼스틱</text></g>
+            <g class="gnode" data-node="y6"><circle cx="195" cy="80" r="17" fill="#fff" stroke="#3182f6" stroke-width="1.3"/><text x="195" y="84.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">6년근</text></g>
+            <g class="gnode" data-node="stick"><circle cx="210" cy="165" r="17" fill="#fff" stroke="#3182f6" stroke-width="1.3"/><text x="210" y="169.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">스틱형</text></g>
+            <g class="gnode" data-node="cust"><circle cx="290" cy="280" r="24" fill="#e6f8f0" stroke="#00bf6f" stroke-width="1.5"/><text x="290" y="285" text-anchor="middle" font-size="12" font-weight="700" fill="#00935b">4060</text></g>
+            <g class="gnode" data-node="health"><circle cx="185" cy="255" r="17" fill="#fff" stroke="#00bf6f" stroke-width="1.3"/><text x="185" y="259.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">건강관심</text></g>
+            <g class="gnode" data-node="gift"><circle cx="215" cy="330" r="17" fill="#fff" stroke="#00bf6f" stroke-width="1.3"/><text x="215" y="334.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">선물수요</text></g>
+            <g class="gnode" data-node="tone"><circle cx="600" cy="110" r="24" fill="#fff3e0" stroke="#ff9500" stroke-width="1.5"/><text x="600" y="115" text-anchor="middle" font-size="12" font-weight="700" fill="#e07c00">신뢰</text></g>
+            <g class="gnode" data-node="calm"><circle cx="700" cy="60" r="17" fill="#fff" stroke="#ff9500" stroke-width="1.3"/><text x="700" y="64.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">차분</text></g>
+            <g class="gnode" data-node="premium"><circle cx="715" cy="130" r="17" fill="#fff" stroke="#ff9500" stroke-width="1.3"/><text x="715" y="134.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">프리미엄</text></g>
+            <g class="gnode" data-node="ch"><circle cx="625" cy="285" r="24" fill="#eef0fe" stroke="#6e7ff3" stroke-width="1.5"/><text x="625" y="290" text-anchor="middle" font-size="12" font-weight="700" fill="#5563e8">유튜브</text></g>
+            <g class="gnode" data-node="kakao"><circle cx="730" cy="250" r="17" fill="#fff" stroke="#6e7ff3" stroke-width="1.3"/><text x="730" y="254.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#4e5968">카카오</text></g>
+            <g class="gnode" data-node="kw"><circle cx="715" cy="340" r="17" fill="#fff" stroke="#6e7ff3" stroke-width="1.3"/><text x="715" y="344.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="#4e5968">“정성”</text></g>
+          </svg>
+        </div>
+
+        <!-- 적용 전/후 -->
+        <div class="ab">
+          <div class="flex aic g10">
+            <span class="section-title" style="font-size:16px">개인화 적용 전 · 후</span>
+            <span class="small muted">동일 프롬프트 — “홍삼 스틱 신제품 출시 광고 문구”</span>
+            <span class="badge badge-blue mla">02 기사 · 04 영상 · 07 이미지에서 적용 중</span>
+          </div>
+          <div class="ab-grid" id="abGrid">
+            <div class="ab-card">
+              <span class="badge badge-gray ab-tag">개인화 OFF — 범용 결과</span>
+              <p>“프리미엄 홍삼스틱 출시! 건강한 하루를 시작하세요. 지금 바로 구매하세요.”</p>
+            </div>
+            <div class="ab-card on">
+              <span class="badge badge-blue ab-tag">개인화 ON — 그래프 컨텍스트 주입</span>
+              <p>“하루 한 포의 정성, 6년근 그대로. 내 몸을 챙기는 가장 쉬운 습관 — 진원 홍삼 스틱”</p>
+              <div class="ab-chips">
+                <span>타깃 4060</span><span>톤 신뢰·차분</span><span>반응 키워드 “정성”</span><span>제품 6년근·스틱형</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 우: 노드 상세 -->
+      <aside class="opanel opanel-r">
+        <div class="flex aic g8">
+          <span class="op-title" id="ndName" style="font-size:16px">진원 (브랜드)</span>
+          <span class="badge badge-blue mla" id="ndType">브랜드·제품</span>
+        </div>
+        <div class="meta-list">
+          <div class="row"><span class="k">출처</span><span class="v" id="ndSrc">브랜드 가이드 §1 · 캠페인 24건</span></div>
+          <div class="row"><span class="k">신뢰도</span><span class="v" id="ndConf">0.98</span></div>
+          <div class="row"><span class="k">생성 사용</span><span class="v" id="ndUse">94회</span></div>
+          <div class="row"><span class="k">마지막 갱신</span><span class="v">어제 18:40</span></div>
+        </div>
+        <div>
+          <div class="op-title" style="margin-bottom:8px">연결 노드</div>
+          <div class="flex g6" style="flex-wrap:wrap" id="ndRel">
+            <span class="rel-chip">홍삼스틱</span><span class="rel-chip">4060</span><span class="rel-chip">신뢰</span><span class="rel-chip">유튜브</span>
+          </div>
+        </div>
+        <div>
+          <div class="op-title" style="margin-bottom:8px">생성 주입 포인트</div>
+          <div class="inj"><span class="dot"></span>영상 프롬프트 — 톤·금지어<span class="scr">04</span></div>
+          <div class="inj"><span class="dot"></span>기사 카피 — 용어·존칭<span class="scr">02</span></div>
+          <div class="inj"><span class="dot"></span>이미지 — 비주얼 스타일<span class="scr">07·08</span></div>
+          <div class="inj"><span class="dot"></span>BGM — 무드 프리셋<span class="scr">05</span></div>
+        </div>
+        <div class="col g8" style="margin-top:auto">
+          <button class="btn btn-soft btn-block" data-demo="이 노드의 컨텍스트를 다음 생성부터 제외합니다 (데모)">이 노드 비활성화</button>
+          <button class="btn btn-ghost btn-block" data-demo="노드 속성 편집 — 데모">속성 편집</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+<script>
+  // 그래프 휠 줌 + 드래그 팬
+  const gc = document.querySelector('.gcanvas');
+  const gsvg = gc.querySelector('svg');
+  let gz = 1, gx = 0, gy = 0, gpan = null;
+  function applyG() { gsvg.style.transform = `translate(${gx}px, ${gy}px) scale(${gz})`; gsvg.style.transformOrigin = 'center'; }
+  gc.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    gz = Math.min(2.4, Math.max(0.6, gz * (e.deltaY < 0 ? 1.08 : 0.92)));
+    applyG();
+  }, { passive: false });
+  gc.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.gnode, .gstat, .glegend')) return;
+    gpan = { x: e.clientX - gx, y: e.clientY - gy };
+    gc.setPointerCapture(e.pointerId);
+    gc.style.cursor = 'grabbing';
+  });
+  gc.addEventListener('pointermove', (e) => { if (gpan) { gx = e.clientX - gpan.x; gy = e.clientY - gpan.y; applyG(); } });
+  gc.addEventListener('pointerup', () => { gpan = null; gc.style.cursor = ''; });
+  gc.addEventListener('dblclick', (e) => { if (!e.target.closest('.gnode')) { gz = 1; gx = gy = 0; applyG(); } });
+
+  // 소스 추가 (실동작)
+  document.getElementById('srcAddBtn').addEventListener('click', function () {
+    const d = document.createElement('div');
+    d.className = 'src';
+    d.style.border = '1.5px dashed var(--blue)';
+    d.innerHTML = '<span class="si">NEW</span><span class="sn"><b contenteditable="true" style="outline:none">신규 소스 — 이름 입력</b>' +
+      '<span>학습 대기 · 다음 재학습 시 반영</span></span><span class="badge badge-gray">대기</span>';
+    this.before(d);
+    if (window.__pressoToast) window.__pressoToast('소스가 추가되었습니다 — 그래프 재학습 시 반영됩니다 (데모)');
+  });
+
+  // 노드 선택 → 우측 상세 갱신
+  const ND = {
+    brand:   { name: '진원 (브랜드)', type: '브랜드·제품', src: '브랜드 가이드 §1 · 캠페인 24건', conf: '0.98', use: '94회', rel: ['홍삼스틱', '4060', '신뢰', '유튜브'] },
+    product: { name: '홍삼스틱 (제품)', type: '브랜드·제품', src: '브랜드 가이드 §2', conf: '0.96', use: '61회', rel: ['6년근', '스틱형', '진원'] },
+    tone:    { name: '신뢰 (톤)', type: '톤·스타일', src: '브랜드 가이드 §3 · 성과 데이터', conf: '0.92', use: '38회', rel: ['차분', '프리미엄', '4060'] },
+    cust:    { name: '4060 (세그먼트)', type: '고객', src: '성과 리포트 · 자사몰 데이터', conf: '0.89', use: '47회', rel: ['건강관심', '선물수요', '유튜브'] },
+    ch:      { name: '유튜브 (채널)', type: '채널·성과', src: '광고 성과 리포트', conf: '0.85', use: '29회', rel: ['카카오', '“정성”', '4060'] },
+    kw:      { name: '“정성” (반응 키워드)', type: '채널·성과', src: '성과 리포트 — CTR 상위', conf: '0.81', use: '18회', rel: ['유튜브', '신뢰'] },
+  };
+  document.querySelectorAll('.gnode').forEach((n) => {
+    n.addEventListener('click', () => {
+      document.querySelectorAll('.gnode').forEach((x) => x.classList.remove('sel'));
+      n.classList.add('sel');
+      const d = ND[n.dataset.node] || ND.brand;
+      document.getElementById('ndName').textContent = d.name;
+      document.getElementById('ndType').textContent = d.type;
+      document.getElementById('ndSrc').textContent = d.src;
+      document.getElementById('ndConf').textContent = d.conf;
+      document.getElementById('ndUse').textContent = d.use;
+      document.getElementById('ndRel').innerHTML = d.rel.map((r) => `<span class="rel-chip">${r}</span>`).join('');
+    });
+  });
+  // 마스터 토글 → 적용 후 카드 dim
+  document.querySelector('.topbar .toggle').addEventListener('click', function () {
+    const on = this.classList.contains('on');
+    document.querySelector('#abGrid .ab-card.on').style.opacity = on ? '' : '.4';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIX — 온톨로지 개인화 엔진 활용 제안서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body { background: var(--bg-fill); }
+  .paper {
+    max-width: 920px; margin: 28px auto 64px; background: #fff;
+    border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: var(--shadow-2); padding: 64px 72px 72px;
+  }
+  .doc-meta { display: flex; gap: 18px; font-size: 12px; color: var(--gray-400); font-weight: 600; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .doc-meta b { color: var(--gray-600); }
+  .paper h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.3; margin-top: 34px; }
+  .paper .subtitle { font-size: 15px; color: var(--gray-500); margin-top: 10px; line-height: 1.6; }
+
+  .toc { margin-top: 30px; border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; }
+  .toc-title { font-size: 12px; font-weight: 800; color: var(--gray-400); letter-spacing: .06em; margin-bottom: 10px; }
+  .toc ol { list-style: none; columns: 2; column-gap: 36px; }
+  .toc li { font-size: 14px; font-weight: 600; color: var(--gray-700); padding: 5px 0; display: flex; gap: 10px; }
+  .toc li i { font-style: normal; color: var(--blue); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  .sec { margin-top: 44px; }
+  .sec-h { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--ink); margin-bottom: 18px; }
+  .sec-h .no { font-size: 20px; font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; }
+  .sec-h h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .paper p.body { font-size: 15px; line-height: 1.8; color: var(--gray-700); margin-bottom: 14px; }
+  .paper p.body b { color: var(--ink); }
+
+  .callout { border-left: 3px solid var(--blue); background: var(--blue-tint); border-radius: 0 10px 10px 0; padding: 14px 18px; font-size: 14px; line-height: 1.7; color: var(--gray-700); margin: 16px 0; }
+
+  .fig { margin: 20px 0 8px; }
+  .fig img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 12px; }
+  .fig figcaption { font-size: 12.5px; color: var(--gray-400); margin-top: 9px; }
+
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 6px; }
+  .tbl th { text-align: left; font-weight: 800; color: var(--gray-600); font-size: 12.5px; padding: 9px 12px; background: var(--bg-soft); border-bottom: 1.5px solid var(--line); }
+  .tbl td { padding: 11px 12px; border-bottom: 1px solid var(--bg-fill); color: var(--gray-700); line-height: 1.55; vertical-align: top; }
+  .tbl td b { color: var(--ink); }
+
+  .scn { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
+  .scn-card { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .scn-card .sc-no { font-size: 11px; font-weight: 800; color: var(--blue); letter-spacing: .04em; }
+  .scn-card h4 { font-size: 15px; font-weight: 800; margin: 5px 0 7px; letter-spacing: -0.015em; }
+  .scn-card p { font-size: 13px; line-height: 1.65; color: var(--gray-500); }
+
+  .phase { display: flex; gap: 12px; margin-top: 6px; }
+  .ph { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 15px 16px; position: relative; border-top: 3.5px solid var(--blue); }
+  .ph .ph-no { font-size: 11px; font-weight: 800; color: var(--blue); }
+  .ph h4 { font-size: 14.5px; font-weight: 800; margin: 4px 0 6px; }
+  .ph p { font-size: 12.5px; line-height: 1.6; color: var(--gray-500); }
+  .ph .ph-w { margin-top: 9px; font-size: 11.5px; font-weight: 700; color: var(--gray-400); }
+
+  .paper-foot { margin-top: 52px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; font-size: 12px; color: var(--gray-400); }
+</style>
+</head>
+<body>
+<div class="paper">
+  <div class="doc-meta">
+    <span><b>문서</b> AIX-ONT-2026-01</span>
+    <span><b>분류</b> 제품 제안서 · 부속 도식 = Data Architecture</span>
+    <span><b>작성</b> AIX 제품기획</span>
+    <span style="margin-left:auto"><b>2026. 06</b></span>
+  </div>
+
+  <h1>온톨로지 개인화 엔진<br>활용성 제안서</h1>
+  <p class="subtitle">광고주가 직접 만들어도 “우리 브랜드답게” — 브랜드 지식그래프 기반 생성 컨텍스트 주입 구조와 저작 도구 전반의 시너지, 도입 단계를 제안합니다.</p>
+
+  <nav class="toc">
+    <div class="toc-title">목차</div>
+    <ol>
+      <li><i>1</i> 개요</li>
+      <li><i>2</i> 문제 정의 — 범용 생성형 AI의 한계</li>
+      <li><i>3</i> 엔진 구조</li>
+      <li><i>4</i> 활용 시나리오</li>
+      <li><i>5</i> 저작 도구 시너지 — 주입 포인트</li>
+      <li><i>6</i> 도입 로드맵</li>
+      <li><i>7</i> 기대 효과</li>
+    </ol>
+  </nav>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">1</span><h2>개요</h2></div>
+    <p class="body">AIX의 주 사용자는 제작 대행사가 아니라 <b>광고주(클라이언트) 본인</b>입니다. 광고주가 직접 기사와 광고를 만들 때 가장 큰 장벽은 도구 사용법이 아니라, <b>“만들어진 결과물이 우리 브랜드답지 않다”</b>는 것입니다. 온톨로지 개인화 엔진은 광고주의 브랜드 자산·고객 데이터·집행 성과를 지식그래프로 축적하고, 모든 생성 요청에 이 컨텍스트를 자동 주입해 이 장벽을 제거합니다.</p>
+    <div class="callout">핵심 명제 — 생성 모델은 시장에서 공용재가 됩니다. 차별화는 모델이 아니라 <b>광고주별로 축적되는 브랜드 지식그래프</b>에서 나오며, 이는 사용할수록 좋아지는 락인(lock-in) 자산입니다.</div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">2</span><h2>문제 정의 — 범용 생성형 AI의 한계</h2></div>
+    <table class="tbl">
+      <tr><th style="width:30%">광고주 셀프 제작 시 문제</th><th>원인</th><th style="width:34%">온톨로지 엔진의 해법</th></tr>
+      <tr><td><b>브랜드 톤 불일치</b> — 결과물이 매번 다른 회사 같음</td><td>모델이 브랜드 가이드·과거 소재를 모름</td><td>톤·스타일 노드를 프롬프트에 상시 주입</td></tr>
+      <tr><td><b>타깃 부정합</b> — 2030 말투로 4060 고객에게 광고</td><td>고객 세그먼트 정보 부재</td><td>주 타깃 세그먼트·반응 키워드 자동 반영</td></tr>
+      <tr><td><b>반복 입력 피로</b> — 매번 같은 설명을 프롬프트에 작성</td><td>컨텍스트가 세션마다 휘발</td><td>그래프가 영구 축적 — 프롬프트 한 줄로 충분</td></tr>
+      <tr><td><b>성과 미반영</b> — 잘 된 광고의 교훈이 다음 제작에 없음</td><td>집행 데이터와 제작 도구의 단절</td><td>성과 피드백 루프가 그래프를 자동 갱신</td></tr>
+    </table>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">3</span><h2>엔진 구조</h2></div>
+    <p class="body">엔진은 5단계 파이프라인과 성과 피드백 루프로 구성됩니다. 광고주 데이터로만 구축되며 워크스페이스 외부로 공유되지 않습니다. 사용자는 생성 화면에서 <b>ON/OFF 스위치 하나</b>로 개인화 적용 여부를 제어합니다.</p>
+    <figure class="fig">
+      <img src="assets/img/ontology-architecture.png" alt="온톨로지 개인화 엔진 구조도 — 데이터 소스, 추출·정규화, 브랜드 지식그래프, 컨텍스트 주입, 생성 파이프라인과 성과 피드백 루프">
+      <figcaption>그림 1. 온톨로지 개인화 엔진 구조도 — 분류: Data Architecture (데이터 흐름 기준)</figcaption>
+    </figure>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">4</span><h2>활용 시나리오 — 광고주 셀프 제작 관점</h2></div>
+    <div class="scn">
+      <div class="scn-card"><div class="sc-no">SCENARIO 01</div><h4>신제품 캠페인 론칭</h4><p>제품명 한 줄만 입력해도 기존 브랜드 톤·주 타깃·금지 표현이 적용된 15초 영상과 SNS 이미지 세트가 일관된 캠페인으로 생성됩니다.</p></div>
+      <div class="scn-card"><div class="sc-no">SCENARIO 02</div><h4>시즌 프로모션 반복 제작</h4><p>지난 시즌 성과가 좋았던 카피 구조·비주얼 패턴이 그래프에 남아, 다음 시즌 제작 시 “잘 됐던 방식”이 기본값이 됩니다.</p></div>
+      <div class="scn-card"><div class="sc-no">SCENARIO 03</div><h4>채널별 변형 전개</h4><p>유튜브·카카오 등 채널 노드별 포맷/톤 차이를 반영해 같은 소재를 채널 맞춤으로 자동 변형합니다.</p></div>
+      <div class="scn-card"><div class="sc-no">SCENARIO 04</div><h4>보도자료·기사형 콘텐츠</h4><p>회사 연혁·제품 사실관계가 그래프에 축적되어 있어, 기사 초안에서 사실 오류와 표기 흔들림(제품명·단위)이 줄어듭니다.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">5</span><h2>저작 도구 시너지 — 기능별 주입 포인트</h2></div>
+    <table class="tbl">
+      <tr><th style="width:26%">저작 화면</th><th>주입되는 컨텍스트</th><th style="width:30%">사용자 체감</th></tr>
+      <tr><td><b>기사 생성·편집</b></td><td>용어집·존칭 규칙 · 카테고리 톤 · 사실관계(제품·연혁)</td><td>교정 없이 쓸 수 있는 초안</td></tr>
+      <tr><td><b>영상 클립 생성</b></td><td>타깃 세그먼트 · 선호 톤 · 스토리보드 패턴 · 금지 요소</td><td>프롬프트 한 줄 → 브랜드다운 컷 구성</td></tr>
+      <tr><td><b>영상 편집 · BGM</b></td><td>자막 서체·크기 규칙 · BGM 무드 프리셋 · 더킹 관행</td><td>편집 명령이 브랜드 규칙 안에서 동작</td></tr>
+      <tr><td><b>이미지 광고 생성·편집</b></td><td>브랜드 컬러 · 비주얼 스타일 · 레이아웃 선호 · CTA 어휘</td><td>시안 4종이 모두 “우리 것” 같음</td></tr>
+      <tr><td><b>자산 라이브러리</b></td><td>자산-노드 연결 (제품 컷 ↔ 제품 노드)</td><td>재사용 시 맥락 자동 연결</td></tr>
+    </table>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">6</span><h2>도입 로드맵</h2></div>
+    <div class="phase">
+      <div class="ph"><div class="ph-no">PHASE 0</div><h4>그래프 구축</h4><p>브랜드 가이드·과거 소재 업로드 → 자동 추출로 초기 그래프 생성, 광고주 검수 1회.</p><div class="ph-w">~2주</div></div>
+      <div class="ph"><div class="ph-no">PHASE 1</div><h4>캠페인 적용</h4><p>생성 전 화면에 ON/OFF 적용. 적용 전·후 비교 뷰로 효과를 광고주가 직접 확인.</p><div class="ph-w">1차 캠페인</div></div>
+      <div class="ph"><div class="ph-no">PHASE 2</div><h4>성과 루프 가동</h4><p>집행 성과·채널 반응 데이터 자동 수집 → 반응 키워드/패턴이 그래프에 누적.</p><div class="ph-w">상시</div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="no">7</span><h2>기대 효과</h2></div>
+    <table class="tbl">
+      <tr><th style="width:34%">효과</th><th>측정 지표 (KPI 후보)</th></tr>
+      <tr><td><b>첫 시안 채택률 상승</b> — 재생성 횟수 감소</td><td>시안 채택까지 생성 횟수 · 재작업률</td></tr>
+      <tr><td><b>제작 리드타임 단축</b> — 프롬프트·교정 시간 절감</td><td>캠페인 소재 1건당 제작 소요 시간</td></tr>
+      <tr><td><b>브랜드 일관성</b> — 채널·소재 간 톤 정합</td><td>브랜드 가이드 위반 검출 건수</td></tr>
+      <tr><td><b>학습 자산화</b> — 쓸수록 좋아지는 락인 구조</td><td>그래프 노드/관계 증가량 · 성과 반영 주기</td></tr>
+    </table>
+    <div class="callout" style="margin-top:18px">본 문서는 PoC 데모 구성과 함께 제출되는 제안 자료입니다. 온톨로지 스튜디오 데모 화면(그래프 탐색 · 적용 전후 비교 · 데이터 소스 관리)에서 본 제안의 사용자 경험을 직접 확인할 수 있습니다.</div>
+  </section>
+
+  <div class="paper-foot">
+    <span>AIX — 온톨로지 개인화 엔진 활용성 제안서</span>
+    <span style="margin-left:auto">AIX-ONT-2026-01 · 1/1</span>
+  </div>
+</div>
+</body>
+</html>

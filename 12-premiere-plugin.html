@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIX — Premiere Pro 플러그인 (UXP 패널)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body { background: #111; min-width: 1280px; }
+  .pr {
+    display: flex; flex-direction: column; height: 96vh; min-height: 820px;
+    background: #1e1e1e; color: #c8c8c8; font-size: 12px;
+    border-radius: 10px 10px 0 0; overflow: hidden; margin: 10px 10px 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+
+  /* ---- 타이틀바 / 메뉴 ---- */
+  .pr-titlebar {
+    height: 36px; flex: none; background: #2b2b2b; display: flex; align-items: center;
+    padding: 0 14px; gap: 8px; border-bottom: 1px solid #161616;
+  }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .pr-title { flex: 1; text-align: center; color: #9a9a9a; font-size: 12px; }
+  .pr-menubar {
+    height: 30px; flex: none; background: #232323; display: flex; align-items: center;
+    padding: 0 12px; gap: 2px; border-bottom: 1px solid #141414; font-size: 12px; color: #b5b5b5;
+  }
+  .pr-menubar span { padding: 4px 9px; border-radius: 4px; cursor: default; }
+  .pr-menubar span:hover { background: #3a3a3a; }
+  .pr-workspaces { margin-left: auto; display: flex; gap: 2px; }
+  .pr-workspaces span { color: #8a8a8a; }
+  .pr-workspaces span.on { color: #fff; background: #3f3f3f; }
+
+  /* ---- 패널 공통 ---- */
+  .pr-body { flex: 1; display: grid; grid-template-columns: 280px minmax(0,1fr) 318px; gap: 5px; padding: 5px; min-height: 0; background: #161616; }
+  .panel-d { background: #232323; border-radius: 5px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .ptab {
+    height: 30px; flex: none; display: flex; align-items: stretch; background: #1b1b1b;
+    border-bottom: 1px solid #141414; font-size: 11.5px;
+  }
+  .ptab span { padding: 0 13px; display: inline-flex; align-items: center; color: #8f8f8f; }
+  .ptab span.on { background: #232323; color: #e2e2e2; border-top: 2px solid #2680eb; }
+  .ptab .ham { margin-left: auto; padding: 0 10px; color: #6a6a6a; }
+
+  /* ---- 좌: 프로젝트 패널 ---- */
+  .bin { padding: 10px; overflow-y: auto; }
+  .bin-search { background:#161616; border:1px solid #3a3a3a; border-radius:4px; height:24px; display:flex; align-items:center; padding:0 8px; color:#777; gap:6px; margin-bottom:10px; }
+  .bin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bin-it { cursor: pointer; border-radius: 4px; padding: 4px; }
+  .bin-it:hover { background: #2e2e2e; }
+  .bin-it.sel { background: #21425f; outline: 1px solid #2680eb; }
+  .bin-it .bi-th { aspect-ratio: 16/9; border-radius: 3px; background-size: cover; background-position: center; position: relative; }
+  .bin-it .bi-th i { position:absolute; right:3px; bottom:3px; font-style:normal; font-size:9.5px; background:rgba(0,0,0,.65); padding:1px 4px; border-radius:2px; color:#ddd; }
+  .bin-it .bi-nm { font-size: 10.5px; color: #b9b9b9; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bin-foot { margin-top: auto; flex: none; border-top: 1px solid #141414; padding: 6px 10px; color: #777; font-size: 10.5px; }
+
+  /* ---- 중앙: 프로그램 모니터 ---- */
+  .mon { display: flex; flex-direction: column; min-height: 0; }
+  .mon-stage { flex: 1; display: grid; place-items: center; background: #1a1a1a; min-height: 0; padding: 14px; }
+  .mon-frame { aspect-ratio: 16/9; width: min(100%, 640px); background-size: cover; background-position: center; border-radius: 2px; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  .mon-frame .sub {
+    position: absolute; left: 0; right: 0; bottom: 12%; text-align: center;
+    font-size: 19px; font-weight: 800; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,.6); letter-spacing: -0.02em;
+  }
+  .mon-bar { flex: none; padding: 8px 14px 12px; }
+  .mon-scrub { height: 4px; background: #3a3a3a; border-radius: 99px; position: relative; }
+  .mon-scrub i { position: absolute; left: 0; top: 0; bottom: 0; width: 47%; background: #2680eb; border-radius: 99px; }
+  .mon-ctl { display: flex; align-items: center; gap: 12px; margin-top: 8px; color: #b5b5b5; }
+  .mon-tc { font-family: ui-monospace, monospace; font-size: 12px; color: #4ea3ff; }
+  .mon-tc small { color: #777; }
+
+  /* ---- 우: AIX UXP 패널 ---- */
+  .uxp { display: flex; flex-direction: column; min-height: 0; }
+  .uxp-head { flex: none; padding: 12px 14px; border-bottom: 1px solid #141414; display: flex; align-items: center; gap: 9px; }
+  .uxp-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+  .ux-card { background: #1b1b1b; border: 1px solid #333; border-radius: 7px; padding: 11px 12px; }
+  .ux-label { font-size: 10px; font-weight: 700; color: #7d7d7d; letter-spacing: .06em; margin-bottom: 7px; }
+  .ux-row { display: flex; align-items: center; gap: 8px; }
+  .ux-btn {
+    background: #2680eb; color: #fff; font-size: 11.5px; font-weight: 700;
+    border-radius: 5px; padding: 7px 10px; width: 100%; text-align: center; cursor: pointer;
+    transition: background .15s;
+  }
+  .ux-btn:hover { background: #1f6fd0; }
+  .ux-btn.ghost { background: #2e2e2e; color: #c8c8c8; }
+  .ux-btn.ghost:hover { background: #3a3a3a; }
+  .ux-clip { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #262626; }
+  .ux-clip:last-child { border-bottom: 0; }
+  .ux-clip .th { width: 44px; height: 26px; border-radius: 3px; flex: none; background-size: cover; background-position: center; }
+  .ux-clip .nm { flex: 1; font-size: 11px; color: #c2c2c2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ux-clip .du { font-size: 10px; color: #7d7d7d; font-family: ui-monospace, monospace; }
+  .ux-check { width: 13px; height: 13px; border-radius: 3px; border: 1px solid #4a4a4a; flex: none; display: grid; place-items: center; font-size: 9px; color: transparent; cursor: pointer; }
+  .ux-check.on { background: #2680eb; border-color: #2680eb; color: #fff; }
+  .ux-badge { font-size: 9.5px; font-weight: 700; border-radius: 3px; padding: 2px 6px; }
+  .ux-green { background: #143a26; color: #4cd07d; }
+  .ux-blue { background: #15304d; color: #4ea3ff; }
+  .ux-orange { background: #46300f; color: #ffb13d; }
+  .ux-cmt { font-size: 11px; color: #b5b5b5; line-height: 1.5; }
+  .ux-cmt b { color: #e0e0e0; }
+  .ux-tc { color: #4ea3ff; font-family: ui-monospace, monospace; font-size: 10px; cursor: pointer; }
+
+  /* ---- 하단: 타임라인 ---- */
+  .pr-tl { flex: none; height: 252px; margin: 0 5px 5px; background: #232323; border-radius: 5px; display: flex; flex-direction: column; overflow: hidden; }
+  .tl-body { flex: 1; display: flex; min-height: 0; }
+  .tl-heads { width: 150px; flex: none; border-right: 1px solid #141414; display: flex; flex-direction: column; }
+  .tl-ruler-spacer { height: 24px; flex: none; border-bottom: 1px solid #141414; display: flex; align-items: center; padding: 0 10px; }
+  .tl-tc { font-family: ui-monospace, monospace; font-size: 13px; color: #4ea3ff; }
+  .tl-h { flex: 1; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-bottom: 1px solid #1b1b1b; font-size: 10.5px; color: #9a9a9a; }
+  .tl-h b { color: #c2c2c2; font-weight: 700; width: 22px; }
+  .tl-h .ic { width: 14px; height: 14px; border-radius: 2px; background: #2e2e2e; display: grid; place-items: center; font-size: 8.5px; color: #888; }
+  .tl-lanes { flex: 1; position: relative; display: flex; flex-direction: column; min-width: 0; }
+  .tl-ruler { height: 24px; flex: none; border-bottom: 1px solid #141414; display: flex; font-size: 9.5px; color: #777; font-family: ui-monospace, monospace; }
+  .tl-ruler span { flex: 1; border-left: 1px solid #2e2e2e; padding: 4px 0 0 4px; }
+  .tl-lane { flex: 1; border-bottom: 1px solid #1b1b1b; position: relative; display: flex; gap: 2px; padding: 3px 0; }
+  .prclip {
+    height: 100%; border-radius: 3px; position: relative; overflow: hidden; cursor: grab;
+    background: #44518c; border: 1px solid #5a69b5;
+    display: flex; align-items: flex-end; padding: 3px 6px;
+    font-size: 9.5px; color: #dfe4ff; white-space: nowrap;
+  }
+  .prclip.v2c { background: #3d6647; border-color: #58925f; color: #e2f5e6; }
+  .prclip.sel { outline: 1.5px solid #fff; }
+  .prclip .fx { position: absolute; top: 2px; left: 4px; font-size: 8px; background: rgba(0,0,0,.4); border-radius: 2px; padding: 0 3px; color: #ffd66b; }
+  .prclip.dragging { opacity: .4; }
+  .aclip {
+    height: 100%; flex: 1; border-radius: 3px; background: #2e5b4e; border: 1px solid #3f7d6a;
+    display: flex; align-items: center; padding: 0 8px; gap: 8px; font-size: 9.5px; color: #bfe8d9;
+  }
+  .aclip .wv { flex: 1; height: 14px; background: repeating-linear-gradient(90deg, #58a88f 0 1.5px, transparent 1.5px 4px); opacity: .65; border-radius: 2px; }
+  .tl-playhead { position: absolute; top: 0; bottom: 0; left: 47%; width: 1.5px; background: #2680eb; z-index: 5; }
+  .tl-playhead::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top: 7px solid #2680eb; }
+
+  /* ---- 하단 네비 스트립 (캡처 시 잘라낼 수 있는 영역) ---- */
+  .demo-strip {
+    display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+    color: var(--gray-400); font-size: 13px; background: #111;
+  }
+  .demo-strip a { color: #7ab4f8; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="pr">
+  <!-- 타이틀바 -->
+  <div class="pr-titlebar">
+    <span class="tl-dot" style="background:#ff5f57"></span>
+    <span class="tl-dot" style="background:#febc2e"></span>
+    <span class="tl-dot" style="background:#28c840"></span>
+    <span class="pr-title">Adobe Premiere Pro 2026 — 진원홍삼_캠페인.prproj</span>
+  </div>
+  <div class="pr-menubar">
+    <span>파일</span><span>편집</span><span>클립</span><span>시퀀스</span><span>마커</span><span>그래픽</span><span>보기</span><span>창</span><span>도움말</span>
+    <div class="pr-workspaces">
+      <span>어셈블리</span><span class="on">편집</span><span>색상</span><span>오디오</span><span>그래픽</span>
+    </div>
+  </div>
+
+  <div class="pr-body">
+    <!-- 좌: 프로젝트 빈 -->
+    <div class="panel-d">
+      <div class="ptab"><span class="on">프로젝트: 진원홍삼_캠페인</span><span class="ham">≡</span></div>
+      <div class="bin">
+        <div class="bin-search">⌕ <span>검색</span></div>
+        <div class="bin-grid">
+          <div class="bin-it sel"><div class="bi-th" style="background-image:url('assets/img/vid-cut4.png')"><i>3.4s</i></div><div class="bi-nm">AIX_씬1_제품클로즈업.mp4</div></div>
+          <div class="bin-it"><div class="bi-th" style="background-image:url('assets/img/vid-cut2.png')"><i>4.2s</i></div><div class="bi-nm">AIX_씬2_진액매크로.mp4</div></div>
+          <div class="bin-it"><div class="bi-th" style="background-image:url('assets/img/vid-cut3.png')"><i>5.0s</i></div><div class="bi-nm">AIX_씬3_라이프스타일.mp4</div></div>
+          <div class="bin-it"><div class="bi-th" style="background-image:url('assets/img/vid-cut1.png')"><i>2.4s</i></div><div class="bi-nm">AIX_씬4_아웃트로.mp4</div></div>
+          <div class="bin-it"><div class="bi-th" style="background-image:url('assets/img/vid-main.png')"><i>15s</i></div><div class="bi-nm">AIX_프리뷰_9x16.mp4</div></div>
+          <div class="bin-it"><div class="bi-th" style="background:#1b3a2e"><i>15s</i></div><div class="bi-nm">Morning_Heritage_BGM.wav</div></div>
+        </div>
+      </div>
+      <div class="bin-foot">6개 항목 — AIX 패널에서 동기화됨</div>
+    </div>
+
+    <!-- 중앙: 프로그램 모니터 -->
+    <div class="panel-d mon">
+      <div class="ptab"><span class="on">프로그램: 진원홍삼_15s_v2</span><span class="ham">≡</span></div>
+      <div class="mon-stage">
+        <div class="mon-frame" id="monFrame" style="background-image:url('assets/img/vid-cut2.png')">
+          <div class="sub">하루 한 포의 정성</div>
+        </div>
+      </div>
+      <div class="mon-bar">
+        <div class="mon-scrub"><i></i></div>
+        <div class="mon-ctl">
+          <span>⏮</span><span style="font-size:15px">▶</span><span>⏭</span>
+          <span class="mon-tc">00:00:07:02 <small>/ 00:00:15:00</small></span>
+          <span style="margin-left:auto;font-size:10.5px;color:#777">1/2 · 1080×1920 — 9:16 시퀀스</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우: AIX UXP 패널 -->
+    <div class="panel-d uxp">
+      <div class="ptab"><span class="on">AIX</span><span>Essential Graphics</span><span class="ham">≡</span></div>
+      <div class="uxp-head">
+        <span class="logo-mark" style="width:26px;height:26px;border-radius:7px;box-shadow:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 4.5 5.5 19.5M12 4.5l6.5 15M7.8 14.5h8.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div style="flex:1">
+          <div style="font-size:12.5px;font-weight:800;color:#ececec">AIX for Premiere</div>
+          <div style="font-size:10px;color:#7d7d7d">무성스튜디오 · 이무성으로 로그인됨</div>
+        </div>
+        <span class="ux-badge ux-green">연결됨</span>
+      </div>
+      <div class="uxp-body">
+        <div class="ux-card">
+          <div class="ux-label">연동 프로젝트</div>
+          <div class="ux-row">
+            <div class="th" style="width:52px;height:30px;border-radius:3px;background-image:url('assets/img/vid-main.png');background-size:cover;background-position:center"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11.5px;font-weight:700;color:#e0e0e0">진원 홍삼 메인 15s</div>
+              <div style="font-size:10px;color:#7d7d7d">v2 · 9:16 · 클립 4 + BGM</div>
+            </div>
+            <span class="ux-badge ux-blue">동기화됨</span>
+          </div>
+        </div>
+
+        <div class="ux-card">
+          <div class="ux-label">클립 가져오기</div>
+          <div class="ux-clip"><span class="ux-check on">✓</span><span class="th" style="background-image:url('assets/img/vid-cut4.png')"></span><span class="nm">씬1 제품 클로즈업</span><span class="du">3.4s</span></div>
+          <div class="ux-clip"><span class="ux-check on">✓</span><span class="th" style="background-image:url('assets/img/vid-cut2.png')"></span><span class="nm">씬2 진액 매크로</span><span class="du">4.2s</span></div>
+          <div class="ux-clip"><span class="ux-check"></span><span class="th" style="background-image:url('assets/img/vid-cut3.png')"></span><span class="nm">씬3 라이프스타일</span><span class="du">5.0s</span></div>
+          <div class="ux-clip"><span class="ux-check"></span><span class="th" style="background-image:url('assets/img/vid-cut1.png')"></span><span class="nm">씬4 아웃트로</span><span class="du">2.4s</span></div>
+          <div style="margin-top:9px" class="ux-btn" id="sendBtn">선택 클립 시퀀스로 보내기 (2)</div>
+        </div>
+
+        <div class="ux-card">
+          <div class="ux-label">변경 사항</div>
+          <div class="ux-row" style="margin-bottom:8px">
+            <span class="ux-badge ux-orange">v3 사용 가능</span>
+            <span style="font-size:10.5px;color:#9a9a9a">웹에서 자막 스타일 변경됨</span>
+          </div>
+          <div class="ux-btn ghost" data-demo="v3 변경분을 시퀀스에 반영합니다 (데모)">업데이트 받기</div>
+        </div>
+
+        <div class="ux-card">
+          <div class="ux-label">코멘트 (AIX 협업 보드)</div>
+          <div class="ux-cmt"><b>김PD</b> <span class="ux-tc">00:07</span> — 제품 라벨 잘림, 5% 줌아웃 부탁드립니다. <span class="ux-badge ux-green">해결</span></div>
+          <div class="ux-cmt" style="margin-top:6px"><b>박매니저</b> <span class="ux-tc">00:13</span> — 아웃트로 로고 1.5초로 연장 검토.</div>
+        </div>
+
+        <div class="ux-btn ghost" data-demo="렌더 결과가 AIX 프로젝트 v3로 업로드됩니다 (데모)">렌더 결과 AIX로 업로드</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 타임라인 -->
+  <div class="pr-tl">
+    <div class="ptab"><span class="on">진원홍삼_15s_v2 ≡</span><span>가을특가_30s</span><span class="ham">≡</span></div>
+    <div class="tl-body">
+      <div class="tl-heads">
+        <div class="tl-ruler-spacer"><span class="tl-tc">00:00:07:02</span></div>
+        <div class="tl-h"><b>V2</b><span class="ic">👁</span><span class="ic">🔒</span><span style="font-size:9px;color:#666">AIX 보낸 클립</span></div>
+        <div class="tl-h"><b>V1</b><span class="ic">👁</span><span class="ic">🔒</span></div>
+        <div class="tl-h"><b>A1</b><span class="ic">M</span><span class="ic">S</span></div>
+        <div class="tl-h"><b>A2</b><span class="ic">M</span><span class="ic">S</span></div>
+      </div>
+      <div class="tl-lanes">
+        <div class="tl-playhead"></div>
+        <div class="tl-ruler"><span>00:00</span><span>00:03</span><span>00:06</span><span>00:09</span><span>00:12</span><span>00:15</span></div>
+        <div class="tl-lane" id="laneV2"></div>
+        <div class="tl-lane" id="laneV1">
+          <div class="prclip" draggable="true" style="width:23%"><span class="fx">fx</span>씬1_제품클로즈업</div>
+          <div class="prclip" draggable="true" style="width:27%"><span class="fx">fx</span>씬2_진액매크로</div>
+          <div class="prclip sel" draggable="true" style="width:31%"><span class="fx">fx</span>씬3_라이프스타일</div>
+          <div class="prclip" draggable="true" style="width:16%">씬4_아웃트로</div>
+        </div>
+        <div class="tl-lane">
+          <div class="aclip">Morning_Heritage.wav<span class="wv"></span>−12dB</div>
+        </div>
+        <div class="tl-lane"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="demo-strip">
+  AIX 데모 — Premiere Pro UXP 패널 연동 화면 (캡처 시 이 줄은 제외하세요)
+  <a href="05-video-edit.html" style="margin-left:auto">← 05 영상 클립 편집으로</a>
+  <a href="index.html">갤러리</a>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+  // 프로그램 모니터 휠 줌
+  const mstage = document.querySelector('.mon-stage');
+  let mz = 1;
+  mstage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    mz = Math.min(2, Math.max(0.5, mz * (e.deltaY < 0 ? 1.06 : 0.94)));
+    document.getElementById('monFrame').style.transform = `scale(${mz})`;
+  }, { passive: false });
+  mstage.addEventListener('dblclick', () => { mz = 1; document.getElementById('monFrame').style.transform = ''; });
+
+  // 체크 토글 + 보내기 카운트
+  const sendBtn = document.getElementById('sendBtn');
+  document.querySelectorAll('.ux-check').forEach((c) => {
+    c.addEventListener('click', () => {
+      c.classList.toggle('on');
+      c.textContent = c.classList.contains('on') ? '✓' : '';
+      const n = document.querySelectorAll('.ux-check.on').length;
+      sendBtn.textContent = `선택 클립 시퀀스로 보내기 (${n})`;
+    });
+  });
+
+  // 보내기 → V2 트랙에 클립 추가 애니메이션
+  sendBtn.addEventListener('click', () => {
+    const names = [];
+    document.querySelectorAll('.ux-clip').forEach((row) => {
+      if (row.querySelector('.ux-check.on')) names.push(row.querySelector('.nm').textContent.replace(/\s/g, '_'));
+    });
+    const lane = document.getElementById('laneV2');
+    lane.innerHTML = '';
+    names.forEach((nm, i) => {
+      const el = document.createElement('div');
+      el.className = 'prclip v2c';
+      el.draggable = true;
+      el.style.width = '0%';
+      el.innerHTML = '<span class="fx">P</span>' + nm;
+      lane.appendChild(el);
+      setTimeout(() => { el.style.transition = 'width .5s ease'; el.style.width = (i === 0 ? 23 : 27) + '%'; }, 60 + i * 160);
+    });
+    if (window.__pressoToast) window.__pressoToast('클립 ' + names.length + '개를 V2 트랙으로 보냈습니다 (데모)');
+  });
+
+  // 타임라인 클립: 클릭 선택 + 드래그 순서 변경
+  document.addEventListener('click', (e) => {
+    const c = e.target.closest('.prclip');
+    if (!c) return;
+    document.querySelectorAll('.prclip').forEach((el) => el.classList.remove('sel'));
+    c.classList.add('sel');
+  });
+  let dragEl = null;
+  document.addEventListener('dragstart', (e) => {
+    const c = e.target.closest('.prclip');
+    if (!c) return;
+    dragEl = c; c.classList.add('dragging');
+  });
+  document.addEventListener('dragend', () => { if (dragEl) dragEl.classList.remove('dragging'); dragEl = null; });
+  document.addEventListener('dragover', (e) => {
+    if (!dragEl) return;
+    const lane = e.target.closest('.tl-lane');
+    if (!lane || !lane.contains(dragEl)) return;
+    e.preventDefault();
+    const after = [...lane.querySelectorAll('.prclip:not(.dragging)')].find((el) => e.clientX < el.getBoundingClientRect().left + el.offsetWidth / 2);
+    if (after) lane.insertBefore(dragEl, after); else lane.appendChild(dragEl);
+  });
+
+  // 프로젝트 빈 선택 → 모니터 프레임 교체
+  document.querySelectorAll('.bin-it').forEach((it) => {
+    it.addEventListener('click', () => {
+      document.querySelectorAll('.bin-it').forEach((el) => el.classList.remove('sel'));
+      it.classList.add('sel');
+      const bg = it.querySelector('.bi-th').style.backgroundImage;
+      if (bg) document.getElementById('monFrame').style.backgroundImage = bg;
+    });
+  });
+</script>
+</body>
+</html>

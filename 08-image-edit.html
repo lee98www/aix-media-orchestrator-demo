@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIX — 이미지 편집</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  .app { height: 100vh; }
+  .main { height: 100vh; min-height: 0; }
+  .editor-body { display: grid; grid-template-columns: 64px minmax(0, 1fr) 300px; flex: 1; min-height: 0; }
+  .epanel-r { min-height: 0; }
+
+  .toolrail {
+    border-right: 1px solid var(--line); padding: 14px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .tool {
+    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+    color: var(--gray-500); cursor: pointer; transition: all .15s; position: relative;
+  }
+  .tool:hover { background: var(--bg-soft); color: var(--ink); }
+  .tool.active { background: var(--blue-soft); color: var(--blue-deep); }
+  .tool svg { stroke: currentColor; }
+  .tool .t-tip { font-size: 9.5px; font-weight: 700; margin-top: 1px; }
+  .rail-sep { width: 28px; height: 1px; background: var(--line); margin: 8px 0; }
+
+  .canvas-zone { position: relative; display: flex; flex-direction: column; min-width: 0; }
+  .canvas-inner { flex: 1; display: grid; place-items: center; padding: 30px; }
+  .art { position: relative; width: min(56vh, 480px); }
+  .art .img { aspect-ratio: 1 / 1; border-radius: 8px; box-shadow: var(--shadow-2); }
+  .art .ad-copy { position: absolute; inset: 0; z-index: 2; }
+  .art .head { position: absolute; left: 30px; bottom: 92px; font-size: 30px; font-weight: 800; color: #fff; line-height: 1.3; letter-spacing: -0.02em; text-shadow: 0 1px 3px rgba(0,0,0,.45), 0 4px 22px rgba(0,0,0,.5); }
+  .art .cta { position: absolute; left: 30px; bottom: 30px; background: #fff; color: var(--ink); font-size: 14px; font-weight: 800; border-radius: 99px; padding: 9px 18px; }
+  .art .brand { position: absolute; top: 24px; left: 28px; font-size: 14px; font-weight: 800; color: #fff; opacity: .92; }
+  .drag-el { cursor: move; user-select: none; }
+  .drag-el:hover, .drag-el.editing { outline: 1.5px dashed rgba(255,255,255,.85); outline-offset: 5px; border-radius: 2px; }
+  .drag-el.editing { cursor: text; }
+  .bg-swap { display: flex; gap: 7px; }
+  .bg-swap .bs { width: 44px; height: 44px; border-radius: 8px; cursor: pointer; background-size: cover; background-position: center; border: 2px solid transparent; }
+  .bg-swap .bs.on { border-color: var(--blue); }
+  .rz { position: absolute; right: -7px; bottom: -7px; width: 13px; height: 13px; background: #fff; border: 2px solid var(--blue); border-radius: 3px; cursor: nwse-resize; z-index: 5; }
+  .bg-removed { background-image: none !important; background-color: transparent;
+    background-image: conic-gradient(#e7eaee 90deg, #fff 90deg 180deg, #e7eaee 180deg 270deg, #fff 270deg) !important;
+    background-size: 22px 22px !important; }
+  .var-row { display: flex; gap: 7px; margin-top: 10px; }
+  .var-row .vs { flex: 1; aspect-ratio: 1/1; border-radius: 8px; background-size: cover; background-position: center; cursor: pointer; border: 2px solid transparent; }
+  .var-row .vs:hover { border-color: var(--blue); }
+
+  /* 인페인트 선택 영역 */
+  .inpaint {
+    position: absolute; right: 9%; top: 13%; width: 38%; height: 34%; z-index: 4;
+    border: 2px dashed #fff; border-radius: 10px;
+    background: rgba(49, 130, 246, 0.22);
+    outline: 2px dashed var(--blue); outline-offset: 2px;
+  }
+  .inpaint .ip-tag {
+    position: absolute; top: -30px; left: 0; white-space: nowrap;
+    font-size: 11.5px; font-weight: 800; color: #fff;
+    background: var(--blue); border-radius: 7px; padding: 4px 9px;
+    box-shadow: var(--shadow-blue);
+  }
+
+  .prompt-dock { padding: 0 30px 24px; display: flex; justify-content: center; }
+  .dock {
+    display: flex; gap: 8px; width: min(100%, 620px);
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 10px; box-shadow: var(--shadow-2);
+  }
+  .dock .input { border: 0; box-shadow: none; }
+  .dock .input:focus { box-shadow: none; }
+
+  .epanel-r { border-left: 1px solid var(--line); padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+  .ep-title { font-size: 14px; font-weight: 800; letter-spacing: -0.02em; }
+
+  .layer { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; }
+  .layer:hover { background: var(--bg-soft); }
+  .layer.selected { background: var(--blue-soft); }
+  .layer .l-icon { width: 30px; height: 30px; border-radius: 7px; flex: none; display: grid; place-items: center; background: var(--bg-fill); font-size: 12px; font-weight: 800; color: var(--gray-500); }
+  .layer .l-name { flex: 1; font-size: 13.5px; font-weight: 700; }
+  .layer.selected .l-name { color: var(--blue-deep); }
+  .layer .eye { color: var(--gray-300); }
+  .layer .eye.on { color: var(--gray-500); }
+
+  .quick { display: flex; flex-direction: column; gap: 8px; }
+  .quick .btn { justify-content: flex-start; }
+
+  .swatches { display: flex; gap: 7px; }
+  .sw { width: 26px; height: 26px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+  .sw.on { border-color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="app" style="grid-template-columns: 1fr">
+  <div class="main">
+    <header class="topbar">
+      <a class="logo" href="01-home.html" style="gap:8px">
+        <span class="logo-mark" style="width:30px;height:30px;border-radius:9px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4.5 5.5 19.5M12 4.5l6.5 15M7.8 14.5h8.4" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </a>
+      <div class="crumb">이미지 광고 <span class="sep">/</span> <b>베리굿 마트 — 시안 A 편집</b></div>
+      <span class="badge badge-green">저장됨</span>
+      <div class="topbar-right">
+        <div class="seg" id="zoomSeg">
+          <span class="seg-item" data-z="0.75">75%</span>
+          <span class="seg-item active" data-z="1">100%</span>
+          <span class="seg-item" data-z="1.5">150%</span>
+          <span class="seg-item" id="zoomLabel" style="pointer-events:none;color:var(--gray-400)">100%</span>
+        </div>
+        <button class="btn btn-ghost btn-sm">실행 취소</button>
+        <button class="btn btn-primary btn-sm" data-demo="내보내기 — 데모에서는 파일이 생성되지 않습니다">내보내기 · PNG</button>
+        <span class="avatar av-1">이</span>
+      </div>
+    </header>
+
+    <div class="editor-body">
+      <!-- 좌: 도구 레일 -->
+      <aside class="toolrail">
+        <div class="tool"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4l7 16 2.2-6.4L20 11z"/></svg><div class="t-tip">선택</div></div></div>
+        <div class="tool active"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5c2.6-1.4 5 .9 4.4 3.3-.7 2.8-4.2 3.1-5.6 5.8-1.1 2.1-.5 4.6-3 5.8-2.2 1-4.8-.3-5.2-2.6-.4-2.2 1.3-3.4 2.9-4.7 2.2-1.8 3.7-5.8 6.5-7.6z"/></svg><div class="t-tip">AI 브러시</div></div></div>
+        <div class="tool"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 4.5 10.5a2 2 0 0 1 0-2.8l4.2-4.2a2 2 0 0 1 2.8 0l7 7a2 2 0 0 1 0 2.8L13.7 18a2 2 0 0 1-2.8 0z"/><path d="M5 20h14"/></svg><div class="t-tip">지우개</div></div></div>
+        <div class="tool" id="toolText" title="텍스트 레이어 추가"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14M12 5v15"/></svg><div class="t-tip">텍스트</div></div></div>
+        <div class="rail-sep"></div>
+        <div class="tool" id="toolBgRm" title="배경 제거 (토글)"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M5 20c1.6-3.2 4.2-4.6 7-4.6s5.4 1.4 7 4.6"/></svg><div class="t-tip">배경 제거</div></div></div>
+        <div class="tool" id="toolCrop" title="크롭 — 비율 순환"><div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14a2 2 0 0 0 2 2h12"/><path d="M3 7h14a2 2 0 0 1 2 2v12"/></svg><div class="t-tip">크롭</div></div></div>
+      </aside>
+
+      <!-- 중앙: 캔버스 -->
+      <section class="canvas-zone dotgrid">
+        <div class="canvas-inner">
+          <div class="art">
+            <div class="img thumb photo shade" style="background-image:url('assets/img/ad-a.png')"></div>
+            <div class="ad-copy">
+              <span class="brand drag-el" title="드래그 이동 · 더블클릭 편집">베리굿 마트</span>
+              <div class="head drag-el" id="adHead" title="드래그 이동 · 더블클릭 편집">가을 신선특가<br>최대 40%</div>
+              <span class="cta drag-el" title="드래그 이동 · 더블클릭 편집">지금 장보러 가기</span>
+            </div>
+            <div class="inpaint">
+              <span class="ip-tag">AI 브러시 — 선택 영역 교체</span>
+              <span class="rz" id="ipResize"></span>
+            </div>
+            <span class="cpin" data-pin="#cpop2" style="left:6%;bottom:58%">정</span>
+            <div class="cpop" id="cpop2" style="left:calc(6% + 36px);bottom:42%">
+              <div class="flex aic g8"><b style="font-size:13px">정디자이너</b><span class="xsmall muted">10분 전</span><span class="badge badge-orange mla">미해결</span></div>
+              <p style="font-size:12.5px;margin-top:6px;color:var(--gray-700);line-height:1.55">헤드라인은 두 줄 유지해 주시고, 우측 상단 영역만 사과 바구니로 교체 부탁드립니다.</p>
+              <div id="cpopReplies"></div><form class="flex g6" id="replyForm" style="margin-top:10px" onsubmit="return false"><input class="input" style="padding:7px 10px;font-size:12.5px" placeholder="답글 입력"><button class="btn btn-primary btn-sm">등록</button></form>
+            </div>
+          </div>
+        </div>
+        <div class="prompt-dock">
+          <form class="dock" onsubmit="return false">
+            <input class="input" value="선택 영역을 사과가 가득 담긴 나무 바구니로 교체">
+            <button class="btn btn-primary" data-fake-gen>적용 · 크레딧 1</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- 우: 레이어/속성 -->
+      <aside class="epanel-r">
+        <div>
+          <div class="flex aic" style="margin-bottom:8px">
+            <span class="ep-title">레이어</span>
+            <button class="btn btn-ghost btn-sm mla" style="padding:4px 9px">+ 추가</button>
+          </div>
+          <div class="col" data-selectable>
+            <div class="layer selectable"><span class="l-icon">T</span><span class="l-name">헤드라인 — “가을 신선특가…”</span><span class="eye on" data-eye=".art .head">●</span></div>
+            <div class="layer selectable"><span class="l-icon">B</span><span class="l-name">CTA 버튼 — 지금 장보러 가기</span><span class="eye on" data-eye=".art .cta">●</span></div>
+            <div class="layer selectable"><span class="l-icon">L</span><span class="l-name">브랜드 로고</span><span class="eye on" data-eye=".art .brand">●</span></div>
+            <div class="layer selectable selected"><span class="l-icon" style="background:var(--blue-soft);color:var(--blue-deep)">IMG</span><span class="l-name">배경 이미지 (AI 생성)</span><span class="eye on" data-eye=".art .img">●</span></div>
+          </div>
+        </div>
+
+        <hr class="divider" style="margin:0">
+
+        <div>
+          <div class="ep-title" style="margin-bottom:10px">속성 — 배경 이미지</div>
+          <div class="col g12">
+            <div class="field">
+              <label class="field-label">필터 톤</label>
+              <div class="chip-group">
+                <span class="chip active">따뜻하게</span>
+                <span class="chip">선명하게</span>
+                <span class="chip">원본</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">헤드라인 서체</label>
+              <div class="seg seg-block" id="fontSeg">
+                <span class="seg-item active" data-font="'Pretendard Variable', Pretendard, sans-serif">고딕</span>
+                <span class="seg-item" data-font="'Noto Serif KR', serif">명조</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">캔버스</label>
+              <div class="flex g6">
+                <button class="btn btn-ghost btn-sm" style="flex:1" id="flipBtn">좌우 반전</button>
+                <button class="btn btn-ghost btn-sm" style="flex:1" id="cropBtn2">비율 변경</button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">헤드라인 크기 <span class="muted xsmall" style="font-weight:600" data-out>30px</span></label>
+              <input type="range" class="range" min="20" max="44" value="30" data-bind="#adHead|fontSize" style="accent-color:var(--blue)">
+            </div>
+            <div class="field">
+              <label class="field-label">배경 교체</label>
+              <div class="bg-swap">
+                <span class="bs on" data-bg="ad-a" style="background-image:url('assets/img/ad-a.png')"></span>
+                <span class="bs" data-bg="ad-b" style="background-image:url('assets/img/ad-b.png')"></span>
+                <span class="bs" data-bg="ad-c" style="background-image:url('assets/img/ad-c.png')"></span>
+                <span class="bs" data-bg="ad-d" style="background-image:url('assets/img/ad-d.png')"></span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">포인트 컬러</label>
+              <div class="swatches">
+                <span class="sw on" style="background:#f47b48"></span>
+                <span class="sw" style="background:#3182f6"></span>
+                <span class="sw" style="background:#00bf6f"></span>
+                <span class="sw" style="background:#191f28"></span>
+                <span class="sw" style="background:#fff;border-color:var(--line)"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider" style="margin:0">
+
+        <div>
+          <div class="ep-title" style="margin-bottom:10px">AI 보정</div>
+          <div class="quick">
+            <button class="btn btn-soft btn-sm" data-fake-gen>화질 업스케일 ×2 — 2160px</button>
+            <button class="btn btn-ghost btn-sm" data-demo="색감 자동 보정 — 데모">색감 자동 보정</button>
+            <button class="btn btn-ghost btn-sm" data-demo="제품 그림자 생성 — 데모">제품 그림자 생성</button>
+            <button class="btn btn-ghost btn-sm" data-demo="텍스트 가독성 영역 확보 — 데모">텍스트 가독성 영역 확보</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="ep-title" style="margin-bottom:10px">AI 변형 제안</div>
+          <button class="btn btn-soft btn-sm btn-block" data-fake-gen data-steps="현재 시안 분석|변형 4종 구성" id="varBtn">현재 시안으로 변형 생성</button>
+          <div class="var-row" id="varRow" style="display:none">
+            <span class="vs" data-bg="ad-a" style="background-image:url('assets/img/ad-a.png')"></span>
+            <span class="vs" data-bg="ad-b" style="background-image:url('assets/img/ad-b.png')"></span>
+            <span class="vs" data-bg="ad-c" style="background-image:url('assets/img/ad-c.png')"></span>
+            <span class="vs" data-bg="ad-d" style="background-image:url('assets/img/ad-d.png')"></span>
+          </div>
+          <div class="xsmall muted" style="margin-top:7px;display:none" id="varHint">변형을 클릭하면 캔버스에 적용됩니다</div>
+        </div>
+
+        <div style="margin-top:auto" class="xsmall muted">
+          편집 기록 6단계 · 원본 보존됨
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+<script>
+  // 핀 답글 추가 (실동작)
+  const rf = document.getElementById('replyForm');
+  rf.addEventListener('submit', () => {
+    const inp = rf.querySelector('input');
+    const v = inp.value.trim();
+    if (!v) return;
+    const d = document.createElement('div');
+    d.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--bg-fill);font-size:12px;color:var(--gray-600)';
+    d.innerHTML = '<b style="color:var(--ink)">이무성</b> · 방금 전<br>';
+    d.appendChild(document.createTextNode(v));
+    document.getElementById('cpopReplies').appendChild(d);
+    inp.value = '';
+  });
+
+  // 레이어 드래그 (head/cta/brand/inpaint)
+  const art = document.querySelector('.art');
+  let drag = null;
+  function bindDrag(el) {
+    el.addEventListener('pointerdown', (ev) => {
+      if (el.isContentEditable) return;
+      const r = el.getBoundingClientRect(), a = art.getBoundingClientRect();
+      drag = { el, dx: ev.clientX - r.left, dy: ev.clientY - r.top, a };
+      el.style.left = (r.left - a.left) + 'px';
+      el.style.top = (r.top - a.top) + 'px';
+      el.style.bottom = 'auto'; el.style.right = 'auto';
+      el.setPointerCapture(ev.pointerId);
+    });
+    el.addEventListener('pointermove', (ev) => {
+      if (!drag || drag.el !== el) return;
+      el.style.left = Math.max(0, Math.min(ev.clientX - drag.a.left - drag.dx, drag.a.width - el.offsetWidth)) + 'px';
+      el.style.top = Math.max(0, Math.min(ev.clientY - drag.a.top - drag.dy, drag.a.height - el.offsetHeight)) + 'px';
+    });
+    el.addEventListener('pointerup', () => { drag = null; });
+  }
+  function bindEdit(el) {
+    el.addEventListener('dblclick', () => { el.contentEditable = true; el.classList.add('editing'); el.focus(); });
+    el.addEventListener('blur', () => { el.contentEditable = false; el.classList.remove('editing'); });
+  }
+  document.querySelectorAll('.drag-el, .inpaint').forEach(bindDrag);
+  document.querySelectorAll('.drag-el').forEach(bindEdit);
+  // 필터 톤 chips
+  const img = document.querySelector('.art .img');
+  const FILTERS = { '따뜻하게': 'sepia(.18) saturate(1.15) brightness(1.02)', '선명하게': 'contrast(1.14) saturate(1.25)', '원본': 'none' };
+  document.querySelectorAll('.chip').forEach((c) => {
+    if (FILTERS[c.textContent.trim()] !== undefined) c.addEventListener('click', () => { img.style.filter = FILTERS[c.textContent.trim()]; });
+  });
+  // 배경 교체
+  document.querySelectorAll('.bg-swap .bs').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.bg-swap .bs').forEach((x) => x.classList.remove('on'));
+      b.classList.add('on');
+      img.style.backgroundImage = `url('assets/img/${b.dataset.bg}.png')`;
+    });
+  });
+  // 포인트 컬러 → 선택 레이어 적용
+  let layerTarget = '#adHead';
+  document.querySelectorAll('.layer').forEach((l) => {
+    l.addEventListener('click', () => {
+      const nm = l.querySelector('.l-name').textContent;
+      layerTarget = nm.startsWith('헤드라인') ? '#adHead' : nm.startsWith('CTA') ? '.art .cta' : nm.startsWith('브랜드') ? '.art .brand' : null;
+    });
+  });
+  document.querySelectorAll('.sw').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      document.querySelectorAll('.sw').forEach((x) => x.classList.remove('on'));
+      sw.classList.add('on');
+      const color = sw.style.background;
+      const t = document.querySelector(layerTarget || '#adHead');
+      if (!t) return;
+      if (t.classList.contains('cta')) { t.style.background = color; t.style.color = '#fff'; }
+      else t.style.color = color;
+    });
+  });
+</script>
+<script>
+  // ---- 휠 줌 + 팬 ----
+  const zone = document.querySelector('.canvas-zone');
+  const artEl = document.querySelector('.art');
+  let zoom = 1, panX = 0, panY = 0;
+  function applyZoom() {
+    artEl.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+    const zl = document.getElementById('zoomLabel');
+    if (zl) zl.textContent = Math.round(zoom * 100) + '%';
+  }
+  zone.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.ctrlKey || Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      zoom = Math.min(2.5, Math.max(0.4, zoom * (e.deltaY < 0 ? 1.07 : 0.93)));
+      applyZoom();
+    }
+  }, { passive: false });
+  document.querySelectorAll('#zoomSeg .seg-item[data-z]').forEach((si) => {
+    si.addEventListener('click', () => { zoom = parseFloat(si.dataset.z); panX = panY = 0; applyZoom(); });
+  });
+  // 빈 캔버스 영역 드래그 = 팬
+  const inner = document.querySelector('.canvas-inner');
+  let pan = null;
+  inner.addEventListener('pointerdown', (e) => {
+    if (e.target !== inner) return;
+    pan = { x: e.clientX - panX, y: e.clientY - panY };
+    inner.setPointerCapture(e.pointerId);
+    inner.style.cursor = 'grabbing';
+  });
+  inner.addEventListener('pointermove', (e) => {
+    if (!pan) return;
+    panX = e.clientX - pan.x; panY = e.clientY - pan.y; applyZoom();
+  });
+  inner.addEventListener('pointerup', () => { pan = null; inner.style.cursor = ''; });
+
+  // ---- 텍스트 레이어 추가 ----
+  let tn = 0;
+  document.getElementById('toolText').addEventListener('click', () => {
+    tn += 1;
+    const t = document.createElement('div');
+    t.className = 'drag-el';
+    t.id = 'txtLayer' + tn;
+    t.style.cssText = 'position:absolute;left:34%;top:42%;font-size:20px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45);z-index:3';
+    t.textContent = '새 텍스트 ' + tn;
+    document.querySelector('.art .ad-copy').appendChild(t);
+    bindDrag(t); bindEdit(t);
+    const row = document.createElement('div');
+    row.className = 'layer selectable';
+    row.innerHTML = '<span class="l-icon">T</span><span class="l-name">텍스트 — 새 텍스트 ' + tn + '</span><span class="eye on" data-eye="#txtLayer' + tn + '">●</span>';
+    const list = document.querySelector('[data-selectable].col') || document.querySelector('.col[data-selectable]');
+    list.prepend(row);
+    window.__pressoToast('텍스트 레이어가 추가되었습니다 — 드래그로 이동, 더블클릭으로 편집');
+  });
+
+  // ---- 크롭 (비율 순환) ----
+  const RATIOS = [['1 / 1', '1:1 피드'], ['4 / 5', '4:5 피드'], ['9 / 16', '9:16 스토리'], ['1.91 / 1', '1.91:1 링크']];
+  let ri = 0;
+  const doCrop = () => {
+    ri = (ri + 1) % RATIOS.length;
+    document.querySelector('.art .img').style.aspectRatio = RATIOS[ri][0];
+    window.__pressoToast('캔버스 비율 — ' + RATIOS[ri][1]);
+  };
+  document.getElementById('toolCrop').addEventListener('click', doCrop);
+  document.getElementById('cropBtn2').addEventListener('click', doCrop);
+
+  // ---- 배경 제거 토글 ----
+  document.getElementById('toolBgRm').addEventListener('click', function () {
+    const im = document.querySelector('.art .img');
+    im.classList.toggle('bg-removed');
+    this.classList.toggle('active');
+    window.__pressoToast(im.classList.contains('bg-removed')
+      ? '배경이 제거되었습니다 — 투명 캔버스 (데모)'
+      : '배경이 복원되었습니다');
+  });
+
+  // ---- 좌우 반전 ----
+  document.getElementById('flipBtn').addEventListener('click', () => {
+    const im = document.querySelector('.art .img');
+    im.style.transform = im.style.transform === 'scaleX(-1)' ? '' : 'scaleX(-1)';
+  });
+
+  // ---- 헤드라인 서체 ----
+  document.querySelectorAll('#fontSeg .seg-item').forEach((si) => {
+    si.addEventListener('click', () => { document.getElementById('adHead').style.fontFamily = si.dataset.font; });
+  });
+
+  // ---- 인페인트 리사이즈 ----
+  const ip = document.querySelector('.inpaint');
+  const rz = document.getElementById('ipResize');
+  let rs = null;
+  rz.addEventListener('pointerdown', (ev) => {
+    ev.stopPropagation();
+    const r = ip.getBoundingClientRect();
+    rs = { x: ev.clientX, y: ev.clientY, w: r.width, h: r.height, a: document.querySelector('.art').getBoundingClientRect() };
+    rz.setPointerCapture(ev.pointerId);
+  });
+  rz.addEventListener('pointermove', (ev) => {
+    if (!rs) return;
+    ip.style.width = Math.max(60, rs.w + ev.clientX - rs.x) / rs.a.width * 100 + '%';
+    ip.style.height = Math.max(50, rs.h + ev.clientY - rs.y) / rs.a.height * 100 + '%';
+  });
+  rz.addEventListener('pointerup', () => { rs = null; });
+
+  // ---- 변형 제안 표시/적용 ----
+  document.getElementById('varBtn').addEventListener('fakegen:done', () => {
+    document.getElementById('varRow').style.display = 'flex';
+    document.getElementById('varHint').style.display = 'block';
+  });
+  document.querySelectorAll('#varRow .vs').forEach((v) => {
+    v.addEventListener('click', () => {
+      const im = document.querySelector('.art .img');
+      im.classList.remove('bg-removed');
+      im.style.backgroundImage = "url('assets/img/" + v.dataset.bg + ".png')";
+      window.__pressoToast('변형이 캔버스에 적용되었습니다');
+    });
+  });
+</script>
+</body>
+</html>
